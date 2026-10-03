@@ -9,14 +9,6 @@ All notable changes to Photo Vault.
 
 ## [v1.12.22] - 2026-10-02
 
-Official signed release. The app itself is unchanged from v1.12.21.
-
-### Changed
-- The release build is now signed with a dedicated release key. If you are on an earlier build you will need to
-  uninstall it first, which deletes the vault, so export anything you want to keep.
-
-## [v1.12.21] - 2026-10-02
-
 First release tracked in git, so this summarises everything since v1.12.20.
 
 ### Added
@@ -34,6 +26,8 @@ First release tracked in git, so this summarises everything since v1.12.20.
   resizes smoothly. The Save button shows progress while saving.
 - All popup sheets now frost whatever is behind them, including video.
 - The "Saved to storage" toast is gone.
+- The release build is now signed with a dedicated release key. If you are on an earlier build you will need to
+  uninstall it first, which deletes the vault, so export anything you want to keep.
 
 ### Fixed
 - Auto-delete sometimes not deleting while the app was in the background.
