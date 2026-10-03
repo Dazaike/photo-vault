@@ -1,0 +1,15 @@
+*.iml
+.gradle/
+.kotlin/
+.idea/
+build/
+app/build/
+local.properties
+captures/
+*.apk
+*.aab
+*.log
+*.hprof
+screencap*.png
+.DS_Store
+dist/
