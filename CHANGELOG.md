@@ -2,6 +2,17 @@
 
 All notable changes to Photo Vault. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+
+## [v1.12.22] - 2026-10-02
+
+Official signed release. No app behaviour changes since v1.12.21; the app code is identical.
+
+### Changed
+- Release APK is now signed with a dedicated release key (`PhotoVault-1.12.22.apk`) instead of the debug key.
+  Android treats this as a different signing identity from the v1.12.21 debug APK, so an installed debug build
+  must be uninstalled first (this deletes the vault's data on the device).
+- `app/build.gradle.kts` reads release signing details from a git-ignored `keystore.properties`.
+
 ## [v1.12.21] - 2026-10-02
 
 First release tracked in git (there is no earlier tag or history), so this entry summarises the work

@@ -13,3 +13,6 @@ captures/
 screencap*.png
 .DS_Store
 dist/
+keystore.properties
+*.jks
+*.keystore
