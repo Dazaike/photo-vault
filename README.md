@@ -34,9 +34,9 @@ Requires Android 8.0 (API 26) or newer.
 | `MANAGE_EXTERNAL_STORAGE` | Optionally deleting originals from the gallery after import |
 | `SCHEDULE_EXACT_ALARM` | Making auto-delete fire on time instead of whenever Doze feels like it |
 | `POST_NOTIFICATIONS`, `POST_PROMOTED_NOTIFICATIONS` | The optional countdown notification |
+| `VIBRATE` | Haptics |
 
 WorkManager and the biometric library add a few of their own (`WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE`, `ACCESS_NETWORK_STATE`, `USE_FINGERPRINT`). The app does not request `INTERNET`, so it cannot reach the network at all.
-| `VIBRATE` | Haptics |
 
 ## The caveats
 
