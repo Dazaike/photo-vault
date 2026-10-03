@@ -2,6 +2,11 @@
 
 All notable changes to Photo Vault. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+- README rewritten (permissions table, install and signing notes, honest caveats). Documentation only.
+
 
 ## [v1.12.22] - 2026-10-02
 
