@@ -12,6 +12,18 @@ interface AlbumDao {
     @Query("SELECT * FROM albums ORDER BY createdAtEpochMs DESC")
     fun observeAlbums(): Flow<List<AlbumEntity>>
 
+    @Query("SELECT * FROM albums")
+    suspend fun allAlbums(): List<AlbumEntity>
+
+    @Query("SELECT * FROM album_items")
+    suspend fun allCrossRefs(): List<AlbumItemCrossRef>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAlbums(albums: List<AlbumEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertCrossRefs(refs: List<AlbumItemCrossRef>)
+
     @Insert
     suspend fun insertAlbum(album: AlbumEntity)
 

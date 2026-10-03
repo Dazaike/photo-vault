@@ -1,6 +1,9 @@
 package com.dazaike.photovault
 
 import android.app.AlarmManager
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -43,7 +46,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
-        requestExactAlarmOnce()
+        requestNotificationsThenExactAlarm()
         setContent {
             val store = remember { UiSettingsStore(applicationContext) }
             var settings by remember { mutableStateOf(store.load()) }
@@ -93,6 +96,20 @@ class MainActivity : FragmentActivity() {
             return true
         }
         return false
+    }
+
+    private val notificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { requestExactAlarmOnce() }
+
+    /** Android 13+ needs a runtime grant; asked at startup, then the exact-alarm screen so the two prompts don't overlap. */
+    private fun requestNotificationsThenExactAlarm() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            requestExactAlarmOnce()
+        }
     }
 
     /** Android 14+ denies exact alarms by default; ask once so timed auto-delete fires on time. */

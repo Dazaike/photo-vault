@@ -19,8 +19,8 @@ android {
         applicationId = "com.dazaike.photovault"
         minSdk = 26
         targetSdk = 35
-        versionCode = 39
-        versionName = "1.12.22"
+        versionCode = 40
+        versionName = "1.12.23"
     }
 
     signingConfigs {
@@ -83,4 +83,5 @@ dependencies {
     implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("io.github.kyant0:backdrop:2.0.1")
     implementation("io.github.kyant0:shapes:1.2.1")
+    testImplementation("junit:junit:4.13.2")
 }

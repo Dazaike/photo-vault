@@ -1,6 +1,9 @@
 package com.dazaike.photovault.ui
 
 import com.dazaike.photovault.data.VaultItemEntity
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -127,6 +130,40 @@ fun VaultGridScreen(
     val backdrop = LocalPageBackdrop.current
     val motion = LocalMotion.current
     val scope = rememberCoroutineScope()
+
+    var backupMode by remember { mutableStateOf<BackupMode?>(null) }
+    var pendingBackupUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingPassword by remember { mutableStateOf<CharArray?>(null) }
+    val backupStatus by viewModel.backupStatus.collectAsState()
+    val appearance = LocalAppearance.current
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream"),
+    ) { uri ->
+        val pw = pendingPassword
+        pendingPassword = null
+        if (uri != null && pw != null) viewModel.exportBackup(uri, pw) else pw?.fill('\u0000')
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            pendingBackupUri = uri
+            backupMode = BackupMode.Import
+        }
+    }
+    LaunchedEffect(backupStatus) {
+        val s = backupStatus
+        when (s) {
+            is BackupStatus.ExportDone -> toasts.show("Backup saved (${s.items} items)", ToastKind.Success)
+            is BackupStatus.ImportDone -> {
+                appearance.update { s.settings }
+                toasts.show("Imported ${s.imported}, skipped ${s.skipped} already in vault", ToastKind.Success)
+            }
+            is BackupStatus.Failed -> toasts.show(s.message, ToastKind.Error)
+            else -> return@LaunchedEffect
+        }
+        backupMode = null
+        pendingBackupUri = null
+        viewModel.clearBackupStatus()
+    }
 
     fun openDeviceGallery() {
         viewModel.loadGalleryItems()
@@ -487,7 +524,7 @@ fun VaultGridScreen(
         AppearanceSheet(showAppearance) { showAppearance = false }
 
         // Overflow menu
-        SheetOverlay(showOverflowMenu, { showOverflowMenu = false }, heightFraction = 0.54f) { _ ->
+        SheetOverlay(showOverflowMenu, { showOverflowMenu = false }, heightFraction = 0.7f) { _ ->
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                 PrismText("More", fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(12.dp))
@@ -504,6 +541,8 @@ fun VaultGridScreen(
                 GhostRow(PrismIcons.Folder, "Albums / Folders", { showOverflowMenu = false; onOpenAlbums() })
                 GhostRow(PrismIcons.Trash, "Trash", { showOverflowMenu = false; onOpenTrash() })
                 GhostRow(PrismIcons.Sliders, "Settings", { showOverflowMenu = false; showAppearance = true })
+                GhostRow(PrismIcons.ArrowUp, "Export backup", { showOverflowMenu = false; backupMode = BackupMode.Export })
+                GhostRow(PrismIcons.ArrowDown, "Import backup", { showOverflowMenu = false; importLauncher.launch(arrayOf("*/*")) })
             }
         }
 
@@ -546,6 +585,22 @@ fun VaultGridScreen(
                 }
             }
         }
+
+        BackupSheet(
+            mode = backupMode,
+            status = backupStatus,
+            onDismiss = { backupMode = null; pendingBackupUri = null },
+            onSubmit = { pw ->
+                if (backupMode == BackupMode.Export) {
+                    pendingPassword = pw
+                    exportLauncher.launch(
+                        "PhotoVault-backup-${SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())}.pvbak",
+                    )
+                } else {
+                    pendingBackupUri?.let { viewModel.importBackup(it, pw) } ?: pw.fill('\u0000')
+                }
+            },
+        )
 
         CreateFolderSheet(
             visible = showCreateFolderDialog,

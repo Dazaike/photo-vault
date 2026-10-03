@@ -34,6 +34,20 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
+import com.dazaike.photovault.backup.BackupManager
+import com.dazaike.photovault.backup.CorruptBackupException
+import com.dazaike.photovault.backup.WrongPasswordException
+import com.dazaike.photovault.data.UiSettings
+import kotlinx.coroutines.CancellationException
+
+sealed interface BackupStatus {
+    data object Idle : BackupStatus
+    data class Running(val importing: Boolean, val done: Int, val total: Int) : BackupStatus
+    data class ExportDone(val items: Int) : BackupStatus
+    data class ImportDone(val imported: Int, val skipped: Int, val settings: UiSettings) : BackupStatus
+    data class Failed(val message: String) : BackupStatus
+}
+
 class VaultViewModel(app: Application) : AndroidViewModel(app) {
 
     private val decodeGate = Semaphore(DECODE_PARALLELISM)
@@ -42,6 +56,49 @@ class VaultViewModel(app: Application) : AndroidViewModel(app) {
     private val crypto = VaultCrypto(app)
     private val db = VaultDatabase.getInstance(app)
     private val repo = VaultRepository(app, db.vaultDao(), db.albumDao(), crypto)
+    private val backup = BackupManager(app, db, repo, crypto)
+
+    private val _backupStatus = MutableStateFlow<BackupStatus>(BackupStatus.Idle)
+    val backupStatus: StateFlow<BackupStatus> = _backupStatus.asStateFlow()
+
+    fun clearBackupStatus() {
+        _backupStatus.value = BackupStatus.Idle
+    }
+
+    fun exportBackup(target: Uri, password: CharArray) = runBackup(false, password) {
+        BackupStatus.ExportDone(backup.export(target, password, progress(false)))
+    }
+
+    fun importBackup(source: Uri, password: CharArray) = runBackup(true, password) {
+        val r = backup.import(source, password, progress(true))
+        BackupStatus.ImportDone(r.imported, r.skipped, r.settings)
+    }
+
+    private fun progress(importing: Boolean): (Int, Int) -> Unit =
+        { d, t -> _backupStatus.value = BackupStatus.Running(importing, d, t) }
+
+    private fun runBackup(importing: Boolean, password: CharArray, block: suspend () -> BackupStatus) {
+        if (_backupStatus.value is BackupStatus.Running) {
+            password.fill('\u0000')
+            return
+        }
+        _backupStatus.value = BackupStatus.Running(importing, 0, 0)
+        viewModelScope.launch {
+            try {
+                _backupStatus.value = block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: WrongPasswordException) {
+                _backupStatus.value = BackupStatus.Failed("Wrong password")
+            } catch (e: CorruptBackupException) {
+                _backupStatus.value = BackupStatus.Failed(e.message ?: "Backup is damaged")
+            } catch (e: Exception) {
+                _backupStatus.value = BackupStatus.Failed("Backup failed: ${e.message ?: e::class.simpleName}")
+            } finally {
+                password.fill('\u0000')
+            }
+        }
+    }
 
     val items: StateFlow<List<VaultItemEntity>> =
         repo.observeItems().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
